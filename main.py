@@ -57,11 +57,17 @@ def menu():
     print("Current phone: ", g_phone.get_name())
     print("Select an option:")
     print("1. Manage calls")
+    print("2. Hangup all calls")
     print("q: Quit")
     option = input("> ")
     match option:
         case '1':
             list_calls()
+        case '2':
+            try:
+                g_phone.hangup_all()
+            except ValueError as e:
+                print(e)
         case 'q':
             return -1
         case _:

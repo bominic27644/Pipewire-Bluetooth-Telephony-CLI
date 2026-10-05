@@ -49,3 +49,14 @@ class Phone:
         if len(calls) == 0:
             raise ValueError("There are currently no calls.")
         return calls
+
+    #hang up all current calls
+    def hangup_all(self):
+        if len(self.get_calls()) == 0:
+            raise ValueError("There are currently no calls in progress.")
+        try:
+            interface = self._dbus_obj.get_interface('org.pipewire.Telephony.AudioGateway1')
+            result = interface.call_hangup_all_sync()
+        except DBusError as e:
+            raise ValueError("Could not hangup all calls.")
+        return
