@@ -1,24 +1,23 @@
-from dbus_fast.aio import MessageBus
-from dbus_fast import unpack_variants, DBusError
-from dbus_fast import Variant
-import asyncio
+from dbus_fast.glib import MessageBus
+from dbus_fast import DBusError
+from classes.phoneClass import Phone
+from classes.callClass import Call
+from classes.bus import Bus
 
-g_bus: MessageBus
-g_phonePath = ""
+g_phone: Phone
 
-async def main():
-    global g_bus
-    global g_phonePath
+def main():
+    global g_phone
     try:
-        g_bus = await MessageBus().connect()
-    except DBusError:
+        bus: MessageBus = Bus().session_bus
+    except ConnectionError as e:
         print("Could not connect to session DBus. Exiting...")
         return -1
-    introspection = await g_bus.introspect('org.pipewire.Telephony', '/org/pipewire/Telephony')
-    obj = g_bus.get_proxy_object('org.pipewire.Telephony', '/org/pipewire/Telephony', introspection)
+    introspection = bus.introspect_sync('org.pipewire.Telephony', '/org/pipewire/Telephony')
+    obj = bus.get_proxy_object('org.pipewire.Telephony', '/org/pipewire/Telephony', introspection)
     try:
         modem = obj.get_interface('org.freedesktop.DBus.ObjectManager')
-        modems: dict = await modem.call_get_managed_objects()
+        modems: dict = modem.call_get_managed_objects_sync()
     except DBusError:
         print("Could not get a list of Bluetooth phones to connect to! Exiting...")
         return -1
@@ -28,21 +27,26 @@ async def main():
         return -1
     print("Select an phone to manage calls for:")
     num_phones = 0
+    phones: list[Phone] = []
     for key, value in modems.items():
-        for key, value in value.items():
-            for key, value in value.items():
-                if isinstance(value, Variant) and key == "Address":
-                    num_phones += 1
-
-                    #TODO: Resolve Bluetooth address to device name
-                    print(num_phones, ". ", value.value, sep='')
+        try:
+            phones.append(Phone(key))
+        except ValueError as e:
+            print(e)
+        num_phones = len(phones)
+        print(num_phones, ". ", phones[num_phones-1].get_name(), " (", phones[num_phones-1].get_address(), ")",  sep='')
     phone_num = input("> ")
     while True:
         if not phone_num.isdigit() or int(phone_num) <= 0 or int(phone_num) > num_phones:
             phone_num = input("> ")
         else:
             break
-    g_phonePath = list(modems)[int(phone_num)-1]
+    try:
+        g_phone = phones[int(phone_num)-1]
+    except ValueError as e:
+        print(e)
+        print("Exiting...")
+        return -1
     print("Welcome to !")
     while True:
         if menu() == -1:
@@ -50,11 +54,46 @@ async def main():
     return 0
 
 def menu():
+    print("Current phone: ", g_phone.get_name())
     print("Select an option:")
+    print("1. Manage calls")
     print("q: Quit")
     option = input("> ")
-    if option == "q":
-        return -1
+    match option:
+        case '1':
+            list_calls()
+        case 'q':
+            return -1
+        case _:
+            return 0
     return 0
 
-asyncio.run(main())
+def list_calls():
+    global g_phone
+    calls: list[Call]
+    num_calls = 0
+    try:
+        calls = g_phone.get_calls()
+    except ValueError as e:
+        print(e)
+        return -1
+    print("Select a call:")
+    for call in calls:
+        num_calls += 1
+        print(num_calls, ". ", "", sep='')
+    print("b: go back to the main menu")
+    call_num = input("> ")
+    while True:
+        if not call_num.isdigit() and call_num.lower() == "b":
+            break
+        elif not call_num.isdigit() or int(call_num) <= 0 or int(call_num) > num_calls:
+            call_num = input("> ")
+        else:
+            break
+    if call_num == 'b':
+        return -0
+    else:
+        return -1
+
+if __name__ == "__main__":
+    main()
