@@ -8,6 +8,68 @@ g_phone: Phone
 
 def main():
     global g_phone
+    if set_phone() == -1:
+        return -1
+    print("Welcome to !")
+    while True:
+        if menu() == -1:
+            break
+    return 0
+
+def menu():
+    print("Current phone: ", g_phone.get_name())
+    print("Select an option:")
+    print("1. Manage calls")
+    print("2. Hangup all calls")
+    print("3. Change phone")
+    print("q: Quit")
+    option = input("> ")
+    match option:
+        case '1':
+            list_calls()
+        case '2':
+            try:
+                g_phone.hangup_all()
+            except ValueError as e:
+                print(e)
+        case '3':
+            if set_phone() == -1:
+                return -1
+        case 'q':
+            return -1
+        case _:
+            return 0
+    return 0
+
+def list_calls():
+    global g_phone
+    calls: list[Call]
+    num_calls = 0
+    try:
+        calls = g_phone.get_calls()
+    except ValueError as e:
+        print(e)
+        return -1
+    print("Select a call:")
+    for call in calls:
+        num_calls += 1
+        print(num_calls, ". ", "", sep='')
+    print("b: go back to the main menu")
+    call_num = input("> ")
+    while True:
+        if not call_num.isdigit() and call_num.lower() == "b":
+            break
+        elif not call_num.isdigit() or int(call_num) <= 0 or int(call_num) > num_calls:
+            call_num = input("> ")
+        else:
+            break
+    if call_num == 'b':
+        return -0
+    else:
+        return -1
+
+def set_phone():
+    global g_phone
     try:
         bus: MessageBus = Bus().session_bus
     except ConnectionError as e:
@@ -46,59 +108,6 @@ def main():
     except ValueError as e:
         print(e)
         print("Exiting...")
-        return -1
-    print("Welcome to !")
-    while True:
-        if menu() == -1:
-            break
-    return 0
-
-def menu():
-    print("Current phone: ", g_phone.get_name())
-    print("Select an option:")
-    print("1. Manage calls")
-    print("2. Hangup all calls")
-    print("q: Quit")
-    option = input("> ")
-    match option:
-        case '1':
-            list_calls()
-        case '2':
-            try:
-                g_phone.hangup_all()
-            except ValueError as e:
-                print(e)
-        case 'q':
-            return -1
-        case _:
-            return 0
-    return 0
-
-def list_calls():
-    global g_phone
-    calls: list[Call]
-    num_calls = 0
-    try:
-        calls = g_phone.get_calls()
-    except ValueError as e:
-        print(e)
-        return -1
-    print("Select a call:")
-    for call in calls:
-        num_calls += 1
-        print(num_calls, ". ", "", sep='')
-    print("b: go back to the main menu")
-    call_num = input("> ")
-    while True:
-        if not call_num.isdigit() and call_num.lower() == "b":
-            break
-        elif not call_num.isdigit() or int(call_num) <= 0 or int(call_num) > num_calls:
-            call_num = input("> ")
-        else:
-            break
-    if call_num == 'b':
-        return -0
-    else:
         return -1
 
 if __name__ == "__main__":
