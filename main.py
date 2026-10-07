@@ -52,8 +52,12 @@ def list_calls():
         return -1
     print("Select a call:")
     for call in calls:
-        num_calls += 1
-        print(num_calls, ". ", "", sep='')
+        try:
+            num_calls += 1
+            print(num_calls, ". ", call.get_number(), sep='')
+        except ValueError as e:
+            print(e)
+            return -1
     print("b: go back to the main menu")
     call_num = input("> ")
     while True:

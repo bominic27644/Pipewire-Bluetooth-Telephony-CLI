@@ -1,6 +1,6 @@
 from classes.bus import Bus
 import dbus_fast
-from dbus_fast import DBusError
+from dbus_fast import DBusError, Variant
 from dbus_fast.glib import ProxyObject, MessageBus
 
 class Call:
@@ -17,3 +17,27 @@ class Call:
             self._dbus_obj = self.bus.get_proxy_object('org.pipewire.Telephony', self.dbus_object_path, self._introspection)
         except DBusError as e:
             raise ValueError("Could not set up the DBus object.")
+
+    def hangup(self):
+        try:
+            interface = self._dbus_obj.get_interface('org.pipewire.Telephony.Call1')
+            interface.call_hangup_sync()
+        except DBusError as e:
+            raise ValueError("Could not hangup call.")
+        return
+
+    def get_number(self):
+        try:
+            # use getAll instead of get because it crashes wireplumber if the number is empty
+            interface = self._dbus_obj.get_interface('org.freedesktop.DBus.Properties')
+            properties: dict = interface.call_get_all_sync("org.pipewire.Telephony.Call1")
+        except DBusError as e:
+            raise ValueError("Could not get phone number for call.")
+        result = ""
+        for key, value in properties.items():
+            if isinstance(value, Variant) and key == "LineIdentification":
+                result = value.value
+                break
+        if result == "":
+            result = "Unknown"
+        return result
