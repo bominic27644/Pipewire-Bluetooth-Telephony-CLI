@@ -54,7 +54,7 @@ def list_calls():
     for call in calls:
         try:
             num_calls += 1
-            print(num_calls, ". ", call.get_number(), sep='')
+            print(num_calls, ". ", call.get_number(), " (", call.get_state(), ")", sep="")
         except ValueError as e:
             print(e)
             return -1
@@ -68,9 +68,9 @@ def list_calls():
         else:
             break
     if call_num == 'b':
-        return -0
+        return 0
     else:
-        return -1
+        return manage_call(calls[int(call_num)-1])
 
 def set_phone():
     global g_phone
@@ -113,6 +113,28 @@ def set_phone():
         print(e)
         print("Exiting...")
         return -1
+
+def manage_call(call: Call):
+    print("Current call: ", call.get_number(), " (", call.get_state(), ")", sep="")
+    print("Select an option:")
+    print("1. Hangup call")
+    if call.is_incoming_call():
+        print("2. Answer")
+    print("b: go back to the main menu")
+    option = input("> ")
+    try:
+        match option:
+            case '1':
+                call.hangup()
+            case '2':
+                call.answer()
+            case 'b':
+                return -1
+            case _:
+                return 0
+    except ValueError as e:
+        print(e)
+    return 0
 
 if __name__ == "__main__":
     main()
